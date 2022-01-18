@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Document</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    .contains-menu {
+        width: 100%;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .menu {
+        display: flex;
+        width: 180%;
+        height: 100%;
+    }
+
+    .menu__left {
+        box-sizing: content-box;
+        box-sizing: border-box;
+        background-color: #ce2222;
+        padding: 20px;
+    }
+
+    .menu__right {
+        box-sizing: content-box;
+        width: 100%;
+        background-color: #37d037;
+        padding: 20px;
+
+    }
+</style>
+<body>
+<div style="margin: 20px; font-size: 20px;">
+Switch the page to mobile mode and move the touch to the right then to the left screen <= 768
+</div>
+<button style="margin: 0 20px 20px 20px;" id="modButton">button test</button>
+<div class="contains-menu">
+<div id="modMenu" class="menu">
+<div class="menu__left">aside menu</div>
+<div class="menu__right">content</div>
+</div>
+</div>
+</body>
+
+<script>
+  class TouchMenu {
+    constructor({
+      idEl,
+      idButton,
+      width,
+      show,
+      size,
+      speed,
+      threshold
+    }) {
+      this.el = document.getElementById(idEl);
+      this.menu = this.el.children[0];
+      this.show = Boolean(show);
+      this.width = width;
+      this.speed = speed;
+      this.threshold = threshold;
+      this.size = size;
+      this.sizeType = size.indexOf('%') !== -1 ? '%' : 'px';
+      this.state = show ? 'open' : 'close';
+      this.offset = 0;
+      this.touchStartClientX = 0;
+      this.windowWidth = window.innerWidth;
+      this.init();
+    }
+
+    init() {
+      window.addEventListener('resize', () => {
+        this.windowWidth = event.target.innerWidth;
+      });
+      this.menu.style.marginLeft = `-${this.size}`;
+      this.menu.style.width = this.size;
+      this.size = parseInt(this.size);
+
+      this.show ? this.open() : this.close();
+
+      this.el.addEventListener('touchmove', (event) => {
+        if (this.width >= this.windowWidth) this.slide(event.touches[0].clientX);
+      });
+
+      this.el.addEventListener('touchstart', (event) => {
+        if (this.width >= this.windowWidth) this.touchStartClientX = event.touches[0].clientX;
+      });
+
+      this.el.addEventListener('touchend', () => {
+        if (this.width >= this.windowWidth) this.closer();
+      });
+    }
+
+    // доводчик
+    closer() {
+      let percent = (parseInt(this.size) + this.offset) / (parseInt(this.size) / 100);
+
+      if (!this.show && this.threshold.left <= percent) {
+        this.open();
+      } else if (!this.show && this.threshold.left > percent) {
+        this.close();
+      } else if (this.show && (100 - this.threshold.right) >= percent) {
+        this.close();
+      } else if (this.show && (100 - this.threshold.right) < percent) this.open();
+    }
+
+    slide(clientX) {
+      if (this.state !== 'slide') this.menu.style.transition = 'none';
+      this.state = 'slide';
+      let position = -(clientX - this.touchStartClientX);
+
+      this.offset = (this.show ? 0 : -this.size) -
+        (this.sizeType === '%' ? (position / (this.windowWidth / 100)) : position);
+
+      if (this.offset > 0 || this.offset < -this.size) return;
+      this.menu.style.marginLeft = this.offset + this.sizeType;
+    }
+
+    toggle() {
+      this.show ? this.close() : this.open();
+    }
+
+    open() {
+      if (this.state !== 'open') this.menu.style.transition = `margin-left ease ${this.speed}s`;
+      this.state = 'open';
+      this.show = true;
+      this.menu.style.marginLeft = 0 + '%';
+      console.log(123, this.state);
+
+    }
+
+    close() {
+      if (this.state !== 'close') this.menu.style.transition = `margin-left ease ${this.speed}s`;
+      this.state = 'close';
+      this.show = false;
+      this.menu.style.marginLeft = '-' + this.size + this.sizeType;
+    }
+  }
+
+  const touchMenu = new TouchMenu({
+    idEl: 'modMenu',
+    width: 768, // menu active <= 768
+    show: false,
+    size: '300px', // 50%
+    speed: 0.2, // transition second
+
+    // door closer threshold
+    threshold: {
+      left: 10,
+      right: 20
+    }
+  });
+
+  document.querySelector('#modButton')
+    .addEventListener('click', () => {
+      touchMenu.toggle();
+    });
+</script>
+</body>
+</html>
